@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get Swole Push-Up Challenge</title>
+  <meta name="description" content="Push-up training program to maximize your abilities">
+  <meta name="theme-color" content="#4CAF50">
+  <meta name="application-name" content="Get Swole Push-Ups">
+  
+  <!-- Proper Manifest -->
+  <link rel="manifest" href="data:application/manifest+json,{
+    %22name%22:%22Get%20Swole%20Push-Up%20Challenge%22,
+    %22short_name%22:%22Swole%20Push-Ups%22,
+    %22description%22:%22Push-up%20training%20program%20to%20maximize%20your%20abilities%22,
+    %22start_url%22:%22/%22,
+    %22display%22:%22standalone%22,
+    %22background_color%22:%22%23121212%22,
+    %22theme_color%22:%224CAF50%22,
+    %22orientation%22:%22portrait-primary%22,
+    %22icons%22:[{
+      %22src%22:%22https://www.shutterstock.com/image-vector/silhouette-sequence-man-doing-pushup-260nw-1719412510.jpg%22,
+      %22sizes%22:%22448x448%22,
+      %22type%22:%22image/jpg%22,
+      %22purpose%22:%22any%20maskable%22
+    },{
+      %22src%22:%22https://www.shutterstock.com/image-vector/silhouette-sequence-man-doing-pushup-260nw-1719412510.jpg%22,
+      %22sizes%22:%22192x192%22,
+      %22type%22:%22image/jpg%22
+    }]
+  }">
+  
+  <!-- Icons -->
+  <link rel="icon" href="https://www.shutterstock.com/image-vector/silhouette-sequence-man-doing-pushup-260nw-1719412510.jpg" sizes="192x192">
+  <link rel="apple-touch-icon" href="https://www.shutterstock.com/image-vector/silhouette-sequence-man-doing-pushup-260nw-1719412510.jpg">
+
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #121212; color: #eee; max-width: 600px; margin: 0 auto; }
+    h1, h2 { text-align: center; }
+    input, button { padding: 12px; margin: 10px 0; font-size: 18px; width: 100%; box-sizing: border-box; }
+    button { background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    .timer { font-size: 48px; text-align: center; margin: 40px 0; }
+    .schedule { background: #1e1e1e; padding: 15px; border-radius: 8px; margin: 20px 0; }
+    .day { margin: 15px 0; padding: 10px; background: #2d2d2d; border-radius: 6px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Get Swole Push-Up Challenge</h1>
+
+  <div id="testSection">
+    <h2>Week Start Test (60 seconds)</h2>
+    <button id="startTest">Start 60-Second Test</button>
+    <div id="testTimer" class="timer hidden">60</div>
+    <div id="repInput" class="hidden">
+      <label>How many push-ups did you do?</label>
+      <input type="number" id="maxReps" placeholder="e.g. 50" min="1">
+      <button id="saveMax">Save & Generate Schedule</button>
+    </div>
+  </div>
+
+  <div id="scheduleSection" class="hidden">
+    <h2>Your 2-Week Schedule</h2>
+    <p><strong>Max reps:</strong> <span id="currentMax"></span></p>
+    <div id="schedule" class="schedule"></div>
+    <button id="startToday">Start Today's Workout</button>
+    <button id="newTest">New Test (Restart Program)</button>
+  </div>
+
+  <div id="workoutSection" class="hidden">
+    <h2>Today's Workout</h2>
+    <p id="todayInfo"></p>
+    <div id="countdown" class="timer">Ready</div>
+    <button id="doneSet" class="hidden">I Did the Set!</button>
+    <button id="stopWorkout">Stop Workout</button>
+  </div>
+
+  <script>
+    const scheduleData = [
+      // Week 1
+      { day: "Monday",    freq: 60,  pct: 0.30 },
+      { day: "Tuesday",   freq: 60,  pct: 0.50 },
+      { day: "Wednesday", freq: 45,  pct: 0.60 },
+      { day: "Thursday",  freq: 60,  pct: 0.25 },
+      { day: "Friday",    freq: 30,  pct: 0.45 },
+      { day: "Saturday",  freq: 60,  pct: 0.40 },
+      { day: "Sunday",    freq: 90,  pct: 0.20 },
+      // Week 2
+      { day: "Monday",    freq: 45,  pct: 0.35 },
+      { day: "Tuesday",   freq: 20,  pct: 0.55 },
+      { day: "Wednesday", freq: 15,  pct: 0.30 },
+      { day: "Thursday",  freq: 60,  pct: 0.65 },
+      { day: "Friday",    freq: 45,  pct: 0.35 },
+      { day: "Saturday",  freq: 60,  pct: 0.45 },
+      { day: "Sunday",    freq: 120, pct: 0.25 }
+    ];
+
+    let maxReps = parseInt(localStorage.getItem('maxReps')) || 0;
+    let timerInterval;
+
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    function showSection(id) {
+      document.querySelectorAll('div[id$="Section"]').forEach(s => s.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function generateSchedule() {
+      const scheduleDiv = document.getElementById('schedule');
+      scheduleDiv.innerHTML = '';
+      document.getElementById('currentMax').textContent = maxReps;
+
+      scheduleData.forEach((item, index) => {
+        const week = index < 7 ? 1 : 2;
+        const amount = Math.round(maxReps * item.pct);
+        const div = document.createElement('div');
+        div.className = 'day';
+        div.innerHTML = `<strong>Week ${week} ${item.day}</strong><br>
+                         Every ${item.freq} minutes: <strong>${amount}</strong> push-ups`;
+        scheduleDiv.appendChild(div);
+      });
+    }
+
+    function getTodayIndex() {
+      const today = new Date().getDay(); // 0=Sunday, 1=Monday...
+      const dayMap = [6, 0, 1, 2, 3, 4, 5];
+      let index = dayMap[today];
+      const testDate = localStorage.getItem('testDate');
+      if (testDate) {
+        const daysSinceTest = Math.floor((Date.now() - new Date(testDate)) / (86400000));
+        if (daysSinceTest >= 7) index += 7;
+      }
+      return index % 14;
+    }
+
+    function startCountdown(minutes) {
+      let seconds = minutes * 60;
+      clearInterval(timerInterval);
+      document.getElementById('doneSet').classList.remove('hidden');
+      timerInterval = setInterval(() => {
+        seconds--;
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        document.getElementById('countdown').textContent = `${m}:${s}`;
+        if (seconds <= 0) {
+          new Notification('Time for push-ups!', { body: 'Do your set now!' });
+          startCountdown(minutes);
+        }
+      }, 1000);
+    }
+
+    // Event Listeners
+    document.getElementById('startTest').onclick = () => {
+      showSection('testSection');
+      document.getElementById('testTimer').classList.remove('hidden');
+      let sec = 60;
+      document.getElementById('testTimer').textContent = sec;
+      timerInterval = setInterval(() => {
+        sec--;
+        document.getElementById('testTimer').textContent = sec;
+        if (sec <= 0) {
+          clearInterval(timerInterval);
+          document.getElementById('repInput').classList.remove('hidden');
+        }
+      }, 1000);
+    };
+
+    document.getElementById('saveMax').onclick = () => {
+      maxReps = parseInt(document.getElementById('maxReps').value);
+      if (isNaN(maxReps) || maxReps < 1) return alert('Enter a valid number');
+      localStorage.setItem('maxReps', maxReps);
+      localStorage.setItem('testDate', new Date().toISOString());
+      generateSchedule();
+      showSection('scheduleSection');
+    };
+
+    document.getElementById('startToday').onclick = () => {
+      const index = getTodayIndex();
+      const today = scheduleData[index];
+      const amount = Math.round(maxReps * today.pct);
+      document.getElementById('todayInfo').innerHTML = `<strong>${today.day}</strong><br>Every ${today.freq} minutes do <strong>${amount}</strong> push-ups`;
+      document.getElementById('countdown').textContent = 'Starting...';
+      showSection('workoutSection');
+      setTimeout(() => startCountdown(today.freq), 2000);
+    };
+
+    document.getElementById('doneSet').onclick = () => {
+      alert('Great job! Timer restarted.');
+    };
+
+    document.getElementById('stopWorkout').onclick = () => {
+      clearInterval(timerInterval);
+      showSection('scheduleSection');
+    };
+
+    document.getElementById('newTest').onclick = () => {
+      localStorage.clear();
+      showSection('testSection');
+    };
+
+    // On load
+    if (maxReps > 0) {
+      generateSchedule();
+      showSection('scheduleSection');
+    } else {
+      showSection('testSection');
+    }
+  </script>
+</body>
+</html>
